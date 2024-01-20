@@ -9,8 +9,16 @@ namespace Car.Player
     {
         [SerializeField] private Transform scoreText;
         [SerializeField] private Transform spawnScoreTextPoint;
+
         private HealthController _health;
         private PlayerUpgradeController _playerUpgrade;
+
+        // Tags
+        private string healthTag = "Health";
+        private string damageTag = "Damage";
+        private string moneyTag = "Money";
+        private string armorTag = "Armor";
+
         private void Awake()
         {
             _health = GetComponent<HealthController>();
@@ -19,34 +27,55 @@ namespace Car.Player
 
         private void OnTriggerEnter(Collider other)
         {
-            if (other.gameObject.CompareTag("Health"))
+            if (other.CompareTag(healthTag))
             {
-                _health.AddHealth(10);
-                other.gameObject.SetActive(false);
+                HandleHealthCollision(other.gameObject);
             }
-            else if (other.gameObject.CompareTag("Damage"))
+            else if (other.CompareTag(damageTag))
             {
-                _health.TakeDamage(5);
-                other.gameObject.SetActive(false);
+                HandleDamageCollision(other.gameObject);
             }
-            else if (other.gameObject.CompareTag("Money"))
+            else if (other.CompareTag(moneyTag))
             {
-                UiController.instance.AddCoin(5);
-                _playerUpgrade.AddMoneyUpgrade(5);
-                ActiveScoreSText(5, spawnScoreTextPoint);
-                other.gameObject.SetActive(false);
+                HandleMoneyCollision(other.gameObject);
             }
-            else if (other.gameObject.CompareTag("Armor"))
+            else if (other.CompareTag(armorTag))
             {
-                _health.ActiveShield();
-                other.gameObject.SetActive(false);
+                HandleArmorCollision(other.gameObject);
             }
         }
 
-        private void ActiveScoreSText(int value, Transform spawnPoint)
+        private void HandleHealthCollision(GameObject healthObject)
         {
-            var scoreParticle = Instantiate(scoreText, spawnPoint.position, spawnPoint.rotation); 
+            _health.AddHealth(10);
+            healthObject.SetActive(false);
+        }
+
+        private void HandleDamageCollision(GameObject damageObject)
+        {
+            _health.TakeDamage(5);
+            damageObject.SetActive(false);
+        }
+
+        private void HandleMoneyCollision(GameObject moneyObject)
+        {
+            UiController.instance.AddCoin(5);
+            _playerUpgrade.AddMoneyUpgrade(5);
+            ActiveScoreText(5);
+            moneyObject.SetActive(false);
+        }
+
+        private void HandleArmorCollision(GameObject armorObject)
+        {
+            _health.ActiveShield();
+            armorObject.SetActive(false);
+        }
+
+        private void ActiveScoreText(int value)
+        {
+            var scoreParticle = Instantiate(scoreText, spawnScoreTextPoint.position, spawnScoreTextPoint.rotation);
             var scoreT = scoreParticle.GetComponentInChildren<Text>();
+
             if (value >= 0)
             {
                 scoreT.text = "+" + value;
@@ -59,10 +88,8 @@ namespace Car.Player
             }
 
             var scorePosition = scoreParticle.position;
-
             scoreParticle.DOLocalMoveY(scorePosition.y + 2, 1);
-            scoreT.DOFade(0, 1);
-            Destroy(scoreParticle.gameObject, 1);
+            scoreT.DOFade(0, 1).OnComplete(() => Destroy(scoreParticle.gameObject));
         }
     }
 }

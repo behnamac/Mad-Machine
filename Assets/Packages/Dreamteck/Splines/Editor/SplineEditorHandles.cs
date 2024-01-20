@@ -75,7 +75,7 @@ namespace Dreamteck.Splines.Editor
             }
             Vector3 lastPos = evalResult.position;
             Handles.color = Color.clear;
-            evalResult.position = Handles.FreeMoveHandle(evalResult.position, Quaternion.LookRotation(cam.transform.position - evalResult.position), size * 0.2f * buttonSize, Vector3.zero, Handles.CircleHandleCap);
+            var fmh_78_79_638413618101791535 = Quaternion.LookRotation(cam.transform.position - evalResult.position); evalResult.position = Handles.FreeMoveHandle(evalResult.position, size * 0.2f * buttonSize, Vector3.zero, Handles.CircleHandleCap);
             if (evalResult.position != lastPos) percent = spline.Project(evalResult.position).percent;
             Handles.color = Color.white;
             return buttonClick;
@@ -120,12 +120,12 @@ namespace Dreamteck.Splines.Editor
 
         public static Vector3 FreeMoveRectangle(Vector3 position, float size) 
         {
-            return Handles.FreeMoveHandle(position, Quaternion.identity, size, Vector3.zero, Handles.CircleHandleCap);
+            var fmh_123_53_638413618101814286 = Quaternion.identity; return Handles.FreeMoveHandle(position, size, Vector3.zero, Handles.CircleHandleCap);
         }
 
         public static Vector3 FreeMoveCircle(Vector3 position, float size)
         {
-            return Handles.FreeMoveHandle(position, Quaternion.identity, size, Vector3.zero, Handles.CircleHandleCap);
+            var fmh_128_53_638413618101815409 = Quaternion.identity; return Handles.FreeMoveHandle(position, size, Vector3.zero, Handles.CircleHandleCap);
         }
 
         public static void DrawSolidSphere(Vector3 position, float radius)

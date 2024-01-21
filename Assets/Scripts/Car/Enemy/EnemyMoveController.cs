@@ -39,7 +39,7 @@ namespace Car.Enemy
             Destroy(particle.gameObject, 3);
 
             // Enable physics for rigidbody
-            follower.enabled = false;
+            Follower.enabled = false;
             _rigidbody.isKinematic = false;
             _rigidbody.useGravity = true;
 

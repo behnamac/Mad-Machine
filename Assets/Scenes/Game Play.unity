@@ -866,6 +866,18 @@ PrefabInstance:
       propertyPath: m_Name
       value: PlayerCar
       objectReference: {fileID: 0}
+    - target: {fileID: 7356734697936710333, guid: e3d42fea699db4d089d700180c0def34, type: 3}
+      propertyPath: bulletSpeed
+      value: 40
+      objectReference: {fileID: 0}
+    - target: {fileID: 7356734697936710333, guid: e3d42fea699db4d089d700180c0def34, type: 3}
+      propertyPath: bulletPrefab
+      value: 
+      objectReference: {fileID: 3656323228131382056, guid: 51ca2a1492f41490e8831e21770ee6e5, type: 3}
+    - target: {fileID: 7356734697936710333, guid: e3d42fea699db4d089d700180c0def34, type: 3}
+      propertyPath: shootingDelay
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:

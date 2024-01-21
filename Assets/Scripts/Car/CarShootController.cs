@@ -7,15 +7,15 @@ namespace Car
 {
     public class CarShootController : MonoBehaviour
     {
-        [SerializeField] private BulletController bullet;
-        [SerializeField] private float speedBullet;
+        [SerializeField] private BulletController bulletPrefab;
+        [SerializeField] private float bulletSpeed;
         [SerializeField] private float bulletDamage;
-        [SerializeField] private float delayShoot;
+        [SerializeField] private float shootingDelay;
         [SerializeField] private Transform shootPoint;
         [SerializeField] private Transform gunModel;
         [SerializeField] private string[] targetTags;
 
-        private float _delayCurrentShoot;
+        private float _currentShootingDelay;
         private List<BulletController> _bulletPool;
         private Transform _bulletParent;
         public HealthController target { get; set; }
@@ -23,15 +23,8 @@ namespace Car
 
         private void Awake()
         {
-            _bulletPool = new List<BulletController>();
-            _bulletParent = new GameObject("Bullet Pool").transform;
-
-            var checker = GetComponentInChildren<CarChecker>();
-            if (checker)
-            {
-                checker.carShoot = this;
-            }
-
+            InitializeBulletPool();
+            AssignCheckerToCarShoot();
             canShoot = true;
         }
 
@@ -39,42 +32,79 @@ namespace Car
         {
             if (target && canShoot)
             {
-                gunModel.DOLookAt(target.transform.position, 0.2f);
+                AimAtTarget();
+                TryShoot();
+            }
+        }
+
+        private void InitializeBulletPool()
+        {
+            _bulletPool = new List<BulletController>();
+            _bulletParent = new GameObject("Bullet Pool").transform;
+        }
+
+        private void AssignCheckerToCarShoot()
+        {
+            var checker = GetComponentInChildren<CarChecker>();
+            if (checker)
+            {
+                checker.CarShoot = this;
+            }
+        }
+
+        private void AimAtTarget()
+        {
+            gunModel.DOLookAt(target.transform.position, 0.2f);
+        }
+
+        private void TryShoot()
+        {
+            _currentShootingDelay -= Time.deltaTime;
+            if (_currentShootingDelay <= 0)
+            {
+                _currentShootingDelay = shootingDelay;
                 Shoot();
             }
         }
 
         private void Shoot()
         {
-            _delayCurrentShoot -= Time.deltaTime;
-            if (_delayCurrentShoot > 0) return;
-            _delayCurrentShoot = delayShoot;
-            
             shootPoint.LookAt(target.transform.position);
+            BulletController bullet = GetOrCreateBullet();
+            ActivateBullet(bullet);
+        }
 
-            for (int i = 0; i < _bulletPool.Count; i++)
+        private BulletController GetOrCreateBullet()
+        {
+            foreach (BulletController existingBullet in _bulletPool)
             {
-                if (!_bulletPool[i].gameObject.activeInHierarchy)
+                if (!existingBullet.gameObject.activeInHierarchy)
                 {
-                    var bul = _bulletPool[i];
-                    var bulRigid = bul.GetComponent<Rigidbody>();
-                    var bulletTransform = bul.transform;
-                    
-                    bulletTransform.position = shootPoint.position;
-                    bulletTransform.rotation = shootPoint.rotation;
-                    bul.gameObject.SetActive(true);
-                    bulRigid.velocity = shootPoint.forward * speedBullet;
-                    return;
+                    return existingBullet;
                 }
             }
 
-            var bull = Instantiate(bullet, shootPoint.position, shootPoint.rotation, _bulletParent);
-            var bullRigid = bull.GetComponent<Rigidbody>();
-            
-            bull.damage = bulletDamage;
-            bull.targetTags = targetTags;
-            bullRigid.velocity = shootPoint.forward * speedBullet;
-            _bulletPool.Add(bull);
+            return CreateNewBullet();
+        }
+
+        private BulletController CreateNewBullet()
+        {
+            BulletController newBullet = Instantiate(bulletPrefab, shootPoint.position, shootPoint.rotation, _bulletParent);
+            newBullet.damage = bulletDamage;
+            newBullet.targetTags = targetTags;
+            _bulletPool.Add(newBullet);
+            return newBullet;
+        }
+
+        private void ActivateBullet(BulletController bullet)
+        {
+            Transform bulletTransform = bullet.transform;
+            Rigidbody bulletRigidbody = bullet.GetComponent<Rigidbody>();
+
+            bulletTransform.position = shootPoint.position;
+            bulletTransform.rotation = shootPoint.rotation;
+            bullet.gameObject.SetActive(true);
+            bulletRigidbody.velocity = shootPoint.forward * bulletSpeed;
         }
 
         public void UpgradeBulletDamage(float value)

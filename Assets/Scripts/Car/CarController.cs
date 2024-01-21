@@ -4,7 +4,6 @@ using UnityEngine;
 using Levels;
 using Controllers;
 using Other;
-using UnityEngine.Serialization;
 
 namespace Car
 {
@@ -18,60 +17,131 @@ namespace Car
     [RequireComponent(typeof(SplineFollower))]
     public class CarController : MonoBehaviour
     {
-        public StartMoveType startMoveType;
         public float speedForward;
-        public RotateObject[] wheels;
-        
-        protected float SpeedHorizontal;
-        protected float MaxHorizontalMove;
-        protected Joystick JoystickCar;
-        
-        public SplineFollower follower { get; set; }
+        [SerializeField] private StartMoveType startMoveType;
+        [SerializeField] private RotateObject[] wheels;
 
-        protected bool CanMove;
+        [SerializeField] protected float speedHorizontal;
+        [SerializeField] protected float maxHorizontalMove;
+        [SerializeField] protected Joystick joystickCar;
+
+        public SplineFollower Follower { get; private set; }
+
+        protected bool canMove;
         private float _xMove;
         private float _turnAngle;
         private Animator _anim;
         private static readonly int HorizontalTurning = Animator.StringToHash("HorizontalTurning");
 
         #region Unity Functions
-        
+
         protected virtual void Awake()
         {
-            LevelManager.OnLevelStart += OnLevelStart;
-            LevelManager.OnLevelComplete += OnLevelComplete;
-            LevelManager.OnLevelLoad += OnLoadLevel;
-            LevelManager.OnLevelFail += OnLevelFail;
-            
-            follower = GetComponent<SplineFollower>();
-            _anim = GetComponent<Animator>();
-            follower.followSpeed = 0;
+            AttachLevelManagerEvents();
+            InitializeComponents();
+        }
 
-            if (!follower.spline)
+        protected virtual void Start()
+        {
+            InitializeMovement();
+        }
+
+        protected virtual void Update()
+        {
+            if (canMove && joystickCar)
+            {
+                PerformHorizontalMove();
+            }
+        }
+
+        protected virtual void OnDestroy()
+        {
+            DetachLevelManagerEvents();
+        }
+
+        #endregion
+
+        #region Initialization Functions
+
+        private void InitializeComponents()
+        {
+            Follower = GetComponent<SplineFollower>();
+            _anim = GetComponent<Animator>();
+            Follower.followSpeed = 0;
+
+            if (!Follower.spline)
             {
                 StartCoroutine(FindSplineComputer());
             }
         }
 
-        protected virtual void Start()
+        private void InitializeMovement()
         {
             if (startMoveType == StartMoveType.LoadScene)
             {
-                CanMove = true;
-                follower.followSpeed = speedForward;
+                ActivateCar();
             }
-
         }
 
-        protected virtual void Update()
+        #endregion
+
+        #region Movement Functions
+
+        protected virtual void PerformHorizontalMove()
         {
-            if (CanMove && JoystickCar)
+            float horizontalInput = joystickCar.Horizontal;
+            float offsetY = Follower.motion.offset.y;
+            _turnAngle = Mathf.Lerp(_turnAngle, horizontalInput, 5 * Time.deltaTime);
+            _anim.SetFloat(HorizontalTurning, _turnAngle);
+            _xMove += horizontalInput * speedHorizontal * Time.deltaTime;
+            _xMove = Mathf.Clamp(_xMove, -maxHorizontalMove, maxHorizontalMove);
+
+            Follower.motion.offset = new Vector2(_xMove, offsetY);
+        }
+
+        protected virtual void ActivateCar()
+        {
+            canMove = true;
+            Follower.followSpeed = speedForward;
+            ActivateWheels();
+        }
+
+        protected virtual void DeactivateCar()
+        {
+            canMove = false;
+            Follower.followSpeed = 0;
+            DeactivateWheels();
+        }
+
+        private void ActivateWheels()
+        {
+            foreach (var wheel in wheels)
             {
-                HorizontalMove();
+                wheel.Active();
             }
         }
 
-        protected virtual void OnDestroy()
+        private void DeactivateWheels()
+        {
+            foreach (var wheel in wheels)
+            {
+                wheel.Diactive();
+            }
+        }
+
+        #endregion
+
+        #region Level Manager Event Handlers
+
+        private void AttachLevelManagerEvents()
+        {
+            LevelManager.OnLevelStart += OnLevelStart;
+            LevelManager.OnLevelComplete += OnLevelComplete;
+            LevelManager.OnLevelLoad += OnLoadLevel;
+            LevelManager.OnLevelFail += OnLevelFail;
+        }
+
+        private void DetachLevelManagerEvents()
         {
             LevelManager.OnLevelStart -= OnLevelStart;
             LevelManager.OnLevelComplete -= OnLevelComplete;
@@ -79,87 +149,48 @@ namespace Car
             LevelManager.OnLevelFail -= OnLevelFail;
         }
 
-        #endregion
-
-        #region Custom Functions
-
-        protected virtual void HorizontalMove()
-        {
-            var h = JoystickCar.Horizontal;
-            var offsetY = follower.motion.offset.y;
-            _turnAngle = Mathf.Lerp(_turnAngle, h, 5 * Time.deltaTime);
-            _anim.SetFloat(HorizontalTurning, _turnAngle);
-            _xMove += h * SpeedHorizontal * Time.deltaTime;
-            _xMove = Mathf.Clamp(_xMove, -MaxHorizontalMove, MaxHorizontalMove);
-
-            follower.motion.offset = new Vector2(_xMove, offsetY);
-        }
-
-        protected virtual void OnActiveCar()
-        {
-            CanMove = true;
-            follower.followSpeed = speedForward;
-
-            for (int i = 0; i < wheels.Length; i++)
-            {
-                wheels[i].Active();
-            }
-        }
-        protected virtual void OnDiactiveCar()
-        {
-            CanMove = false;
-            follower.followSpeed = 0;
-            
-            for (int i = 0; i < wheels.Length; i++)
-            {
-                wheels[i].Diactive();
-            }
-        }
-
-        #endregion
-
-        #region EVENTs
-
         protected virtual void OnLevelStart(Level level)
         {
             if (startMoveType == StartMoveType.StartGame)
             {
-                OnActiveCar();
+                ActivateCar();
             }
         }
+
         protected virtual void OnLevelComplete(Level level)
         {
-            Invoke(nameof(OnDiactiveCar), 3);
+            Invoke(nameof(DeactivateCar), 3);
         }
+
         protected virtual void OnLoadLevel(Level level)
         {
             if (startMoveType == StartMoveType.LoadLevel)
             {
-                OnActiveCar();
+                ActivateCar();
             }
         }
+
         protected virtual void OnLevelFail(Level level)
         {
-            OnDiactiveCar();
+            DeactivateCar();
         }
 
         #endregion
 
-        #region IEnumerators
+        #region Coroutine
 
         private IEnumerator FindSplineComputer()
         {
-            while (!follower.spline)
+            while (!Follower.spline)
             {
                 yield return new WaitForEndOfFrame();
                 var computer = FindObjectOfType<SplineComputer>();
                 if (computer)
                 {
-                    follower.spline = computer;
+                    Follower.spline = computer;
                 }
             }
         }
-
         #endregion
     }
 }

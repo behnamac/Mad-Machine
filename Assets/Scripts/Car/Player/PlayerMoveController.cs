@@ -7,8 +7,6 @@ namespace Car.Player
 {
     public class PlayerMoveController : CarController
     {
-        [SerializeField] private float speedHorizontal;
-        [SerializeField] private float maxHorizontalMove;
         [SerializeField] private Joystick horizontalInputJoystick; // Updated variable name
         [SerializeField] private Transform finishLine;
 
@@ -18,9 +16,7 @@ namespace Car.Player
         protected override void Awake()
         {
             base.Awake();
-            SpeedHorizontal = speedHorizontal;
-            MaxHorizontalMove = maxHorizontalMove;
-            JoystickCar = horizontalInputJoystick; // Updated variable assignment
+            joystickCar = horizontalInputJoystick; // Updated variable assignment
 
             _carShoot = GetComponent<CarShootController>();
             _rigidbody = GetComponent<Rigidbody>();
@@ -36,15 +32,15 @@ namespace Car.Player
         {
             base.Update();
 
-            if (!CanMove) return;
+            if (!canMove) return;
 
             if (_carShoot && _carShoot.target)
             {
-                follower.followSpeed = _carShoot.target.GetComponent<SplineFollower>().followSpeed;
+                Follower.followSpeed = _carShoot.target.GetComponent<SplineFollower>().followSpeed;
             }
             else
             {
-                follower.followSpeed = speedForward;
+                Follower.followSpeed = speedForward;
             }
         }
 
@@ -79,7 +75,7 @@ namespace Car.Player
                 _carShoot.canShoot = false;
             }
 
-            follower.enabled = false;
+            Follower.enabled = false;
             _rigidbody.isKinematic = false;
             _rigidbody.useGravity = true;
             _rigidbody.velocity = new Vector3(Random.Range(-10, 10), Random.Range(10, 20), Random.Range(-5, 5));
